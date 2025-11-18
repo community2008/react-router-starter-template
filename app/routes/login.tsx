@@ -1,4 +1,8 @@
+import { useState } from "react";
 import type { Route } from "./+types/login";
+import { useAuth } from "../contexts/AuthContext";
+import { Form, useNavigate } from "react-router";
+import type { User } from "../models/user";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -8,6 +12,39 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Login() {
+  const [error, setError] = useState<string | null>(null);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      setError(null);
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "登录失败");
+      }
+
+      const user = await response.json() as User;
+      login(user);
+      navigate("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "登录失败，请重试");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -24,7 +61,7 @@ export default function Login() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" action="#" method="POST">
+          <form className="space-y-6" onSubmit={handleSubmit} method="POST">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 邮箱地址
@@ -58,6 +95,10 @@ export default function Login() {
                 />
               </div>
             </div>
+
+            {error && (
+              <div className="text-red-600 text-sm">{error}</div>
+            )}
 
             <div>
               <button

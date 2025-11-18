@@ -1,4 +1,7 @@
+import { useState } from "react";
 import type { Route } from "./+types/register";
+import { useNavigate } from "react-router";
+import type { User } from "../models/user";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -8,6 +11,50 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Register() {
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const passwordConfirmation = formData.get("password_confirmation") as string;
+
+    // 验证密码一致性
+    if (password !== passwordConfirmation) {
+      setError("两次输入的密码不一致");
+      return;
+    }
+
+    try {
+      setError(null);
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "注册失败");
+      }
+
+      setSuccess("注册成功！即将跳转到登录页面...");
+      
+      // 3秒后跳转到登录页面
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "注册失败，请重试");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -24,7 +71,7 @@ export default function Register() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" action="#" method="POST">
+          <form className="space-y-6" onSubmit={handleSubmit} method="POST">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                 用户名
@@ -92,6 +139,14 @@ export default function Register() {
                 />
               </div>
             </div>
+
+            {error && (
+              <div className="text-red-600 text-sm">{error}</div>
+            )}
+
+            {success && (
+              <div className="text-green-600 text-sm">{success}</div>
+            )}
 
             <div>
               <button

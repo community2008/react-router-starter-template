@@ -1,3 +1,4 @@
+import { useAuth } from "../contexts/AuthContext";
 import type { Route } from "./+types/home";
 
 export function meta({}: Route.MetaArgs) {
@@ -5,13 +6,6 @@ export function meta({}: Route.MetaArgs) {
     { title: "哲学书籍分享平台" },
     { name: "description", content: "探索哲学世界，分享智慧与思考" },
   ];
-}
-
-export function loader({ context }: Route.LoaderArgs) {
-  return {
-    isAuthenticated: false, // 暂时硬编码为未登录
-    isAdmin: false // 暂时硬编码为非管理员
-  };
 }
 
 // 分类卡片组件
@@ -33,8 +27,8 @@ function CategoryCard({ title, description, link, icon }: { title: string; descr
   );
 }
 
-export default function Home({ loaderData }: Route.ComponentProps) {
-  const { isAuthenticated, isAdmin } = loaderData;
+export default function Home() {
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
   
   return (
     <div className="min-h-screen bg-cover bg-center bg-fixed" style={{ backgroundImage: `url('/image/1.jpg')` }}>
@@ -56,7 +50,10 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                       上传书籍
                     </a>
                   )}
-                  <button className="bg-gray-200 hover:bg-gray-300 text-gray-900 px-6 py-2 rounded-full text-sm font-medium transition-colors">
+                  <button 
+                    onClick={logout}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-900 px-6 py-2 rounded-full text-sm font-medium transition-colors"
+                  >
                     退出登录
                   </button>
                 </div>
