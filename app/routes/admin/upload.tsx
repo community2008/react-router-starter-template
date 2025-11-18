@@ -11,7 +11,7 @@ export function meta() {
 }
 
 const UploadPage: React.FC = () => {
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   
   const [title, setTitle] = useState('');
@@ -40,6 +40,7 @@ const UploadPage: React.FC = () => {
       formData.append('author', author);
       formData.append('description', description);
       formData.append('bookFile', bookFile);
+      formData.append('userId', user?.id?.toString() || '');
       if (coverFile) {
         formData.append('coverFile', coverFile);
       }

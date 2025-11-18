@@ -11,20 +11,31 @@ export class CloudflareR2Service implements R2Service {
   constructor(private bucket: R2Bucket) {}
 
   async uploadFile(file: File, path: string, customMetadata?: Record<string, string>): Promise<string> {
-    const fileBuffer = await file.arrayBuffer();
-    
-    await this.bucket.put(path, fileBuffer, {
-      httpMetadata: {
-        contentType: file.type || 'application/octet-stream',
-      },
-      customMetadata: {
-        fileName: file.name,
-        uploadedAt: new Date().toISOString(),
-        ...customMetadata,
-      },
-    });
-
-    return path;
+    console.log(`Starting upload for ${file.name} to ${path}`);
+    try {
+      const fileBuffer = await file.arrayBuffer();
+      console.log(`File buffer size: ${fileBuffer.byteLength} bytes`);
+      
+      const result = await this.bucket.put(path, fileBuffer, {
+        httpMetadata: {
+          contentType: file.type || 'application/octet-stream',
+        },
+        customMetadata: {
+          fileName: file.name,
+          uploadedAt: new Date().toISOString(),
+          ...customMetadata,
+        },
+      });
+      
+      console.log(`Upload successful: ${result?.key}`);
+      return path;
+    } catch (error) {
+      console.error(`Upload failed for ${file.name}:`, error);
+      if (error instanceof Error) {
+        console.error(`Error stack: ${error.stack}`);
+      }
+      throw error;
+    }
   }
 
   async getFileUrl(path: string): Promise<string> {

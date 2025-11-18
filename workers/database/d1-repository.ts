@@ -71,9 +71,15 @@ export class D1BookRepository implements BookRepository {
   }
 
   async getAllBooks(): Promise<Book[]> {
-    const result = await this.db.prepare('SELECT * FROM books ORDER BY created_at DESC').all<Book>();
-    // D1Result 类型的 all() 方法返回的是 D1AllResult，包含 results
-    return (result as any).results || [];
+    try {
+      const result = await this.db.prepare('SELECT * FROM books ORDER BY created_at DESC').all<Book>();
+      console.log('getAllBooks result:', result);
+      // D1Result 类型的 all() 方法返回的是 D1AllResult，包含 rows
+      return (result as any).rows || [];
+    } catch (error) {
+      console.error('Error in getAllBooks:', error);
+      return [];
+    }
   }
 
   async updateBook(id: number, updates: Partial<Book>): Promise<Book | null> {

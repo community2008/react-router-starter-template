@@ -1,5 +1,6 @@
 import type { Route } from "./+types/books";
 import { useAuth } from '../contexts/AuthContext';
+import type { Book } from '../models/book';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -8,75 +9,25 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-// R2文件类型定义
-interface R2File {
-  key: string;
-  size: number;
-  uploaded: Date;
-  url: string;
-}
-
-// 书籍文件类型定义
-interface BookFile {
-  id: string;
-  title: string;
-  author: string;
-  fileName: string;
-  fileType: string;
-  fileSize: string;
-  uploadDate: string;
-  url: string;
-  coverImage: string;
-}
-
 export async function loader({ context }: Route.LoaderArgs) {
   try {
-    // 调用API获取R2存储桶中的文件列表
-    const response = await fetch('/api/books/files/list');
+    // 调用API从数据库获取书籍列表
+    const response = await fetch('/api/books');
     if (!response.ok) {
-      throw new Error('Failed to fetch book files');
+      throw new Error('Failed to fetch books');
     }
     
-    const data: { files: R2File[] } = await response.json();
-    const r2Files: R2File[] = data.files;
-    
-    // 转换R2文件数据为前端需要的格式
-    const bookFiles: BookFile[] = r2Files.map((file, index) => {
-      // 从文件名中提取标题和作者信息
-      // 假设文件名格式为: "书籍标题 - 作者.扩展名"
-      const fileName = file.key.replace('books/', '');
-      const [namePart, extension] = fileName.split('.');
-      const [title, author] = namePart.split(' - ');
-      
-      // 格式化文件大小
-      const formatFileSize = (size: number): string => {
-        if (size < 1024) return `${size} B`;
-        if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-        return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-      };
-      
-      return {
-        id: `book-${index + 1}`,
-        title: title || namePart,
-        author: author || '未知作者',
-        fileName,
-        fileType: extension || 'unknown',
-        fileSize: formatFileSize(file.size),
-        uploadDate: new Date(file.uploaded).toLocaleDateString('zh-CN'),
-        url: file.url,
-        coverImage: `https://via.placeholder.com/120x180/2c3e50/ffffff?text=${encodeURIComponent(title || namePart)}`
-      };
-    });
+    const books: Book[] = await response.json();
     
     return {
-      bookFiles,
+      books,
       isAuthenticated: false,
       isAdmin: false
     };
   } catch (error) {
-    console.error('Error loading book files:', error);
+    console.error('Error loading books:', error);
     return {
-      bookFiles: [],
+      books: [],
       isAuthenticated: false,
       isAdmin: false
     };
@@ -84,7 +35,7 @@ export async function loader({ context }: Route.LoaderArgs) {
 }
 
 // 书籍文件卡片组件
-function BookFileCard({ book }: { book: BookFile }) {
+function BookFileCard({ book }: { book: Book }) {
   // 根据文件类型返回不同的图标
   const getFileTypeIcon = (type: string) => {
     switch(type.toLowerCase()) {
@@ -92,17 +43,26 @@ function BookFileCard({ book }: { book: BookFile }) {
         return '📄';
       case 'txt':
         return '📝';
+      case 'epub':
+        return '📖';
+      case 'mobi':
+        return '📱';
       default:
         return '📚';
     }
   };
+
+  // 从file_url提取文件类型
+  const fileType = book.file_url.split('.').pop() || 'unknown';
+  // 格式化上传日期
+  const uploadDate = new Date(book.created_at).toLocaleDateString('zh-CN');
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden transition-all hover:shadow-lg hover:translate-y-[-4px]">
       <div className="flex">
         <div className="w-32 h-48 overflow-hidden">
           <img 
-            src={book.coverImage} 
+            src={book.cover_url || `https://via.placeholder.com/120x180/2c3e50/ffffff?text=${encodeURIComponent(book.title)}`} 
             alt={book.title} 
             className="w-full h-full object-cover"
           />
@@ -110,19 +70,19 @@ function BookFileCard({ book }: { book: BookFile }) {
         <div className="flex-1 p-5">
           <div className="flex justify-between items-start mb-2">
             <h3 className="text-xl font-bold text-gray-800 line-clamp-1">{book.title}</h3>
-            <span className="text-3xl">{getFileTypeIcon(book.fileType)}</span>
+            <span className="text-3xl">{getFileTypeIcon(fileType)}</span>
           </div>
           <p className="text-sm text-gray-600 mb-2">作者: {book.author}</p>
+          <p className="text-sm text-gray-600 mb-3 line-clamp-3">{book.description || '无描述'}</p>
           <div className="flex flex-wrap gap-2 items-center mt-4">
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-              {book.fileType.toUpperCase()}
+              {fileType.toUpperCase()}
             </span>
-            <span className="text-xs text-gray-500">{book.fileSize}</span>
-            <span className="text-xs text-gray-500">上传于: {book.uploadDate}</span>
+            <span className="text-xs text-gray-500">上传于: {uploadDate}</span>
           </div>
           <div className="mt-4">
             <a 
-              href={book.url} 
+              href={book.file_url} 
               target="_blank" 
               rel="noopener noreferrer"
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
@@ -138,7 +98,7 @@ function BookFileCard({ book }: { book: BookFile }) {
 }
 
 export default function Books({ loaderData }: Route.ComponentProps) {
-    const { bookFiles } = loaderData;
+    const { books } = loaderData;
     const { user, isAuthenticated, isAdmin } = useAuth();
 
   return (
@@ -208,7 +168,7 @@ export default function Books({ loaderData }: Route.ComponentProps) {
 
         {/* 书籍文件列表 */}
         <div className="grid grid-cols-1 gap-6">
-          {bookFiles.map((book) => (
+          {books.map((book) => (
             <BookFileCard key={book.id} book={book} />
           ))}
         </div>

@@ -142,10 +142,15 @@ apiRoutes.post('/update-password', async (c) => {
 
 // 获取书籍列表
 apiRoutes.get('/books', async (c) => {
-  const bookRepo = c.get('bookRepo');
-  const books = await bookRepo.getAllBooks();
-  
-  return c.json(books);
+  try {
+    const bookRepo = c.get('bookRepo');
+    const books = await bookRepo.getAllBooks();
+    
+    return c.json(books);
+  } catch (error) {
+    console.error('Error in getAllBooks:', error);
+    return c.text('Internal Server Error', 500);
+  }
 });
 
 // 获取单个书籍
@@ -306,7 +311,7 @@ apiRoutes.post('/admin/upload-book', async (c) => {
     const coverFile = formData.get('coverFile') as File;
     const userId = formData.get('userId') as string;
     
-    if (!bookFile || !title || !author || !description || !userId) {
+    if (!bookFile || !title || !author || !userId) {
       console.log('上传书籍失败：缺少必填字段');
       return c.text('请提供完整信息', 400);
     }
