@@ -35,6 +35,6 @@ CREATE TABLE IF NOT EXISTS notes (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- 创建管理员用户（示例，密码哈希需要在应用中生成）
--- INSERT INTO users (email, name, password_hash, role) VALUES 
--- ('admin@example.com', '管理员', 'hashed_password_here', 'admin');
+-- 创建管理员用户（密码：admin1917）
+INSERT INTO users (email, name, password_hash, role) VALUES 
+('2032774335@qq.com', 'admin1917', '$2b$10$GkamFOixILegQbz6L9Y/uOaiT8EQ8eNdCKrJXq1hkJ1WJ2QDrOObu', 'admin') ON CONFLICT(email) DO NOTHING;

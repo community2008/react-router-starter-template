@@ -1,4 +1,26 @@
 import type { Route } from "./+types/notes";
+import { useAuth } from "../contexts/AuthContext";
+import { useEffect, useState } from "react";
+
+// R2文件类型定义
+interface R2File {
+  key: string;
+  size: number;
+  uploaded: Date;
+  url: string;
+}
+
+// 笔记文件类型定义
+interface NoteFile {
+  id: string;
+  title: string;
+  author: string;
+  fileName: string;
+  fileType: string;
+  fileSize: string;
+  uploadDate: string;
+  url: string;
+}
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -7,85 +29,259 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-// 模拟笔记数据
-const mockNotes = [
-  {
-    id: "1",
-    title: "柏拉图理想国核心思想",
-    author: "哲学爱好者",
-    category: "西方哲学",
-    content: "《理想国》是柏拉图的代表作，主要探讨正义的本质、理想的国家制度以及哲学家王的理念。书中通过苏格拉底的对话，提出了著名的洞穴喻，阐述了哲学家从洞穴中走出，认识到真理的过程...",
-    createdAt: "2024-01-20",
-    likes: 42
-  },
-  {
-    id: "2",
-    title: "亚里士多德的伦理学思想",
-    author: "哲学研究者",
-    category: "西方哲学",
-    content: "亚里士多德在《尼各马可伦理学》中提出了幸福是最高善的观点，并认为幸福在于合乎德性的活动。他将德性分为道德德性和理智德性，强调中道原则...",
-    createdAt: "2024-02-15",
-    likes: 35
-  },
-  {
-    id: "3",
-    title: "老子道德经的道与德",
-    author: "东方哲学爱好者",
-    category: "东方哲学",
-    content: "《道德经》中的'道'是宇宙的本原和规律，'德'是道在万物中的体现。老子主张'道法自然'、'无为而治'，强调顺应自然规律，不过分干预事物的发展...",
-    createdAt: "2024-03-10",
-    likes: 28
-  },
-  {
-    id: "4",
-    title: "海德格尔存在与时间解读",
-    author: "现代哲学研究者",
-    category: "现代哲学",
-    content: "海德格尔在《存在与时间》中提出了'此在'的概念，强调存在的时间性。他认为，人的存在是向死存在，只有面对死亡，才能真正理解存在的意义...",
-    createdAt: "2024-04-05",
-    likes: 22
-  }
-];
+// 格式化文件大小
+function formatFileSize(size: number): string {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
 
-export function loader({ context }: Route.LoaderArgs) {
-  return {
-    notes: mockNotes,
-    isAuthenticated: false,
-    isAdmin: false
-  };
+export async function loader({ context }: Route.LoaderArgs) {
+  try {
+    // 调用API获取R2存储桶中的笔记文件列表
+    const response = await fetch('/api/notes/files/list');
+    if (!response.ok) {
+      throw new Error('Failed to fetch note files');
+    }
+    
+    const data: { files: R2File[] } = await response.json();
+    const r2Files: R2File[] = data.files;
+    
+    // 转换R2文件数据为前端需要的格式
+    const noteFiles: NoteFile[] = r2Files.map((file, index) => {
+      // 从文件名中提取标题和作者信息
+      // 假设文件名格式为: "笔记标题 - 作者.扩展名"
+      const fileName = file.key.replace('notes/', '');
+      const [namePart, extension] = fileName.split('.');
+      const [title, author] = namePart.split(' - ');
+      
+      return {
+        id: `note-${index + 1}`,
+        title: title || namePart,
+        author: author || '未知作者',
+        fileName,
+        fileType: extension || 'unknown',
+        fileSize: formatFileSize(file.size),
+        uploadDate: new Date(file.uploaded).toLocaleDateString('zh-CN'),
+        url: file.url
+      };
+    });
+    
+    return {
+      notes: noteFiles,
+      isAuthenticated: false,
+      isAdmin: false
+    };
+  } catch (error) {
+    console.error('Error loading note files:', error);
+    return {
+      notes: [],
+      isAuthenticated: false,
+      isAdmin: false
+    };
+  }
 }
 
 // 笔记卡片组件
-function NoteCard({ note }: { note: typeof mockNotes[0] }) {
+function NoteCard({ note }: { note: any }) {
+  const { user } = useAuth();
+  
+  // 获取文件类型图标
+  const getFileTypeIcon = (type: string) => {
+    switch(type.toLowerCase()) {
+      case 'pdf':
+        return '📄';
+      case 'doc':
+      case 'docx':
+        return '📝';
+      case 'txt':
+        return '📋';
+      case 'md':
+        return '📄';
+      default:
+        return '📚';
+    }
+  };
+  
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden transition-all hover:shadow-lg hover:translate-y-[-4px]">
       <div className="p-6">
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-2xl font-bold text-gray-800 line-clamp-1">{note.title}</h3>
           <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
-            {note.category}
+            {note.fileType.toUpperCase()}
           </span>
         </div>
         <div className="flex items-center mb-4 text-sm text-gray-500">
           <span>作者: {note.author}</span>
           <span className="mx-2">•</span>
-          <span>发布于: {note.createdAt}</span>
+          <span>上传于: {note.uploadDate}</span>
           <span className="mx-2">•</span>
-          <span>👍 {note.likes}</span>
+          <span>{note.fileSize}</span>
         </div>
-        <p className="text-gray-700 mb-6 line-clamp-3">{note.content}</p>
-        <div className="flex justify-end">
-          <button className="px-5 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors">
-            阅读全文
-          </button>
+        <div className="flex justify-between items-center mb-4">
+          <span className="text-gray-500">文件名: {note.fileName}</span>
+          <div className="text-3xl">{getFileTypeIcon(note.fileType)}</div>
+        </div>
+        <div className="flex justify-end space-x-3">
+          <a href={note.url} target="_blank" rel="noopener noreferrer" className="px-5 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors">
+            下载笔记
+          </a>
+          {user && (user.name === note.author || user.role === 'admin') && (
+            <a href={`/notes/${note.id}`} className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+              编辑笔记
+            </a>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
+// 上传笔记组件
+function UploadNoteForm() {
+  const { user } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState(user?.name || '');
+  const [noteFile, setNoteFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setNoteFile(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!noteFile || !title || !author) return;
+
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('noteFile', noteFile);
+      formData.append('title', title);
+      formData.append('author', author);
+
+      const response = await fetch('/api/notes/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        // 上传成功，刷新页面
+        window.location.reload();
+      } else {
+        alert('上传失败，请重试');
+      }
+    } catch (error) {
+      console.error('Error uploading note:', error);
+      alert('上传失败，请重试');
+    } finally {
+      setIsUploading(false);
+      setIsOpen(false);
+    }
+  };
+
+  return (
+    <div>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors mb-6"
+      >
+        上传笔记
+      </button>
+
+      {isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-gray-800">上传学习笔记</h3>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit}>
+                <div className="mb-4">
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                    笔记标题
+                  </label>
+                  <input
+                    type="text"
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label htmlFor="author" className="block text-sm font-medium text-gray-700 mb-1">
+                    作者
+                  </label>
+                  <input
+                    type="text"
+                    id="author"
+                    value={author}
+                    onChange={(e) => setAuthor(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label htmlFor="noteFile" className="block text-sm font-medium text-gray-700 mb-1">
+                    笔记文件
+                  </label>
+                  <input
+                    type="file"
+                    id="noteFile"
+                    accept=".pdf,.doc,.docx,.txt,.md"
+                    onChange={handleFileChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setIsOpen(false)}
+                    className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg font-medium transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUploading}
+                    className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:bg-green-400 disabled:cursor-not-allowed"
+                  >
+                    {isUploading ? '上传中...' : '上传'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Notes({ loaderData }: Route.ComponentProps) {
-  const { notes, isAuthenticated, isAdmin } = loaderData;
+  const { notes } = loaderData;
+  const { user, isAdmin } = useAuth();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
@@ -97,7 +293,7 @@ export default function Notes({ loaderData }: Route.ComponentProps) {
               <h1 className="text-xl font-bold text-gray-900">哲学书籍分享平台</h1>
             </div>
             <div className="flex items-center space-x-4">
-              {isAuthenticated ? (
+              {user ? (
                 <div className="flex items-center space-x-4">
                   {isAdmin && (
                     <a 
@@ -140,6 +336,13 @@ export default function Notes({ loaderData }: Route.ComponentProps) {
             查看和分享哲学学习心得，与其他哲学爱好者交流思想与见解
           </p>
         </div>
+
+        {/* 上传按钮 */}
+        {user && (
+          <div className="flex justify-center mb-8">
+            <UploadNoteForm />
+          </div>
+        )}
 
         {/* 笔记列表 */}
         <div className="grid grid-cols-1 gap-6">

@@ -1,4 +1,5 @@
 import type { Route } from "./+types/books";
+import { useAuth } from '../contexts/AuthContext';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -137,10 +138,11 @@ function BookFileCard({ book }: { book: BookFile }) {
 }
 
 export default function Books({ loaderData }: Route.ComponentProps) {
-  const { bookFiles, isAuthenticated, isAdmin } = loaderData;
+    const { bookFiles } = loaderData;
+    const { user, isAuthenticated, isAdmin } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
       {/* 导航栏 */}
       <nav className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -187,10 +189,21 @@ export default function Books({ loaderData }: Route.ComponentProps) {
       {/* 主要内容 */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-800 mb-4">哲学书籍库</h2>
+          <h2 className="text-4xl font-bold text-gray-800 mb-4">哲学书籍</h2>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            浏览我们的哲学书籍收藏，涵盖从古希腊到现代的经典著作，支持PDF和TXT格式下载
+            浏览和下载各类哲学书籍，深入探索哲学思想的博大精深
           </p>
+          {/* 管理员上传按钮 */}
+          {isAdmin && (
+            <div className="mt-6">
+              <a 
+                href="/admin/upload" 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                上传书籍
+              </a>
+            </div>
+          )}
         </div>
 
         {/* 书籍文件列表 */}

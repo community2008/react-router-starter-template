@@ -149,11 +149,166 @@ apiRoutes.get('/books/files/list', async (c) => {
   const r2Service = c.get('r2Service');
   
   try {
-    // 列出books目录下的所有文件
     const files = await r2Service.listFiles('books/');
-    return c.json({ files });
+    
+    // 为每个文件生成下载URL
+    const filesWithUrl = await Promise.all(files.map(async (file) => {
+      return {
+        key: file.key,
+        size: file.size,
+        uploaded: file.uploaded,
+        url: `${c.req.url.replace('/api/books/files/list', '/api/files/')}${file.key}`
+      };
+    }));
+    
+    return c.json({ files: filesWithUrl });
   } catch (error) {
-    console.error('Error listing R2 files:', error);
+    console.error('Error listing book files:', error);
     return c.text('获取文件列表失败', 500);
+  }
+});
+
+// 列出R2存储桶中的笔记文件
+apiRoutes.get('/notes/files/list', async (c) => {
+  const r2Service = c.get('r2Service');
+  
+  try {
+    const files = await r2Service.listFiles('notes/');
+    
+    // 为每个文件生成下载URL
+    const filesWithUrl = await Promise.all(files.map(async (file) => {
+      return {
+        key: file.key,
+        size: file.size,
+        uploaded: file.uploaded,
+        url: `${c.req.url.replace('/api/notes/files/list', '/api/files/')}${file.key}`
+      };
+    }));
+    
+    return c.json({ files: filesWithUrl });
+  } catch (error) {
+    console.error('Error listing note files:', error);
+    return c.text('获取文件列表失败', 500);
+  }
+});
+
+// 获取R2存储桶中的文件内容
+apiRoutes.get('/files/:path{.*}', async (c) => {
+  const r2Service = c.get('r2Service');
+  const path = c.req.param('path');
+  
+  try {
+    const file = await c.env.BOOKS_BUCKET.get(path);
+    
+    if (!file) {
+      return c.text('文件不存在', 404);
+    }
+    
+    // 将R2文件转换为ArrayBuffer以避免类型不匹配问题
+    const arrayBuffer = await file.arrayBuffer();
+    return new Response(arrayBuffer, {
+      headers: {
+        'Content-Type': file.httpMetadata?.contentType || 'application/octet-stream',
+        'Content-Length': file.size.toString(),
+        'ETag': file.httpEtag || ''
+      }
+    });
+  } catch (error) {
+    console.error('Error getting file:', error);
+    return c.text('获取文件失败', 500);
+  }
+});
+
+// 用户上传笔记文件
+apiRoutes.post('/notes/upload', async (c) => {
+  const r2Service = c.get('r2Service');
+  const userRepo = c.get('userRepo');
+  
+  try {
+    // 验证用户身份
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader) {
+      return c.text('未授权', 401);
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    // 这里应该验证JWT token，暂时简化为检查用户是否存在
+    
+    // 处理文件上传
+    const formData = await c.req.formData();
+    const noteFile = formData.get('noteFile') as File;
+    const title = formData.get('title') as string;
+    const author = formData.get('author') as string;
+    
+    if (!noteFile || !title || !author) {
+      return c.text('请提供完整信息', 400);
+    }
+    
+    // 上传笔记文件到R2存储桶
+    const notePath = `notes/${Date.now()}-${noteFile.name}`;
+    await r2Service.uploadFile(noteFile, notePath);
+    
+    // 返回成功信息
+    return c.json({
+      success: true,
+      message: '笔记上传成功',
+      path: notePath
+    });
+  } catch (error) {
+    console.error('Error uploading note:', error);
+    return c.text('上传笔记失败', 500);
+  }
+});
+
+// 管理员上传书籍文件
+apiRoutes.post('/admin/upload-book', async (c) => {
+  const bookRepo = c.get('bookRepo');
+  const r2Service = c.get('r2Service');
+  
+  try {
+    // 验证用户身份（这里应该使用JWT验证，暂时简化）
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader) {
+      return c.text('未授权', 401);
+    }
+    
+    // 处理文件上传
+    const formData = await c.req.formData();
+    const title = formData.get('title') as string;
+    const author = formData.get('author') as string;
+    const description = formData.get('description') as string;
+    const bookFile = formData.get('bookFile') as File;
+    const coverFile = formData.get('coverFile') as File;
+    const userId = formData.get('userId') as string;
+    
+    // 上传书籍文件
+    const bookPath = `books/${Date.now()}-${bookFile.name}`;
+    await r2Service.uploadFile(bookFile, bookPath);
+    
+    // 上传封面图片（如果有）
+    let coverPath = '';
+    if (coverFile) {
+      coverPath = `covers/${Date.now()}-${coverFile.name}`;
+      await r2Service.uploadFile(coverFile, coverPath);
+    }
+    
+    // 获取文件URL
+    const bookUrl = `${c.req.url.replace('/api/admin/upload-book', '/api/files/')}${bookPath}`;
+    const coverUrl = coverPath ? `${c.req.url.replace('/api/admin/upload-book', '/api/files/')}${coverPath}` : '';
+    
+    // 保存书籍信息到数据库
+    const book = await bookRepo.createBook({
+      title,
+      author,
+      description,
+      cover_url: coverUrl,
+      file_url: bookUrl,
+      uploaded_by: parseInt(userId)
+    });
+    
+    return c.json(book);
+  } catch (error) {
+    console.error('Error uploading book:', error);
+    return c.text('上传书籍失败', 500);
   }
 });
