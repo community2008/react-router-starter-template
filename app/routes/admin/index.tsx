@@ -55,7 +55,7 @@ const AdminDashboard: React.FC = () => {
               </Link>
 
               {/* 管理书籍 */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow p-6 border-2 border-indigo-100 hover:border-indigo-300">
+              <Link to="/admin/books" className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow p-6 border-2 border-indigo-100 hover:border-indigo-300">
                 <div className="flex items-center">
                   <div className="text-4xl text-indigo-600 mr-4">📖</div>
                   <div>
@@ -64,12 +64,12 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-4 text-right">
-                  <span className="text-gray-400 font-medium">功能开发中 →</span>
+                  <span className="text-indigo-600 font-medium">查看详情 →</span>
                 </div>
-              </div>
+              </Link>
 
               {/* 管理笔记 */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow p-6 border-2 border-indigo-100 hover:border-indigo-300">
+              <Link to="/admin/notes" className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow p-6 border-2 border-indigo-100 hover:border-indigo-300">
                 <div className="flex items-center">
                   <div className="text-4xl text-indigo-600 mr-4">📝</div>
                   <div>
@@ -78,12 +78,12 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-4 text-right">
-                  <span className="text-gray-400 font-medium">功能开发中 →</span>
+                  <span className="text-indigo-600 font-medium">查看详情 →</span>
                 </div>
-              </div>
+              </Link>
 
               {/* 用户管理 */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow p-6 border-2 border-indigo-100 hover:border-indigo-300">
+              <Link to="/admin/users" className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow p-6 border-2 border-indigo-100 hover:border-indigo-300">
                 <div className="flex items-center">
                   <div className="text-4xl text-indigo-600 mr-4">👥</div>
                   <div>
@@ -92,9 +92,9 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-4 text-right">
-                  <span className="text-gray-400 font-medium">功能开发中 →</span>
+                  <span className="text-indigo-600 font-medium">查看详情 →</span>
                 </div>
-              </div>
+              </Link>
 
               {/* 系统设置 */}
               <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow p-6 border-2 border-indigo-100 hover:border-indigo-300">
@@ -111,7 +111,7 @@ const AdminDashboard: React.FC = () => {
               </div>
 
               {/* 数据统计 */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow p-6 border-2 border-indigo-100 hover:border-indigo-300">
+              <Link to="/admin/statistics" className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow p-6 border-2 border-indigo-100 hover:border-indigo-300">
                 <div className="flex items-center">
                   <div className="text-4xl text-indigo-600 mr-4">📊</div>
                   <div>
@@ -120,9 +120,9 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-4 text-right">
-                  <span className="text-gray-400 font-medium">功能开发中 →</span>
+                  <span className="text-indigo-600 font-medium">查看详情 →</span>
                 </div>
-              </div>
+              </Link>
             </div>
 
             {/* 快速链接 */}

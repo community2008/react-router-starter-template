@@ -25,6 +25,7 @@ export interface UserRepository {
   createUser(user: Omit<UserInput, 'password'> & { password_hash: string }): Promise<User>;
   getUserById(id: number): Promise<User | null>;
   getUserByEmail(email: string): Promise<User | null>;
+  getAllUsers(): Promise<User[]>;
   updateUser(id: number, updates: Partial<User>): Promise<User | null>;
   deleteUser(id: number): Promise<boolean>;
 }

@@ -1,7 +1,7 @@
 import type { Route } from "./+types/books";
 import { useAuth } from '../contexts/AuthContext';
 import type { Book } from '../models/book';
-
+import { useLoaderData } from "react-router";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "哲学书籍 - 哲学书籍分享平台" },
@@ -9,10 +9,11 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export async function loader({ context }: Route.LoaderArgs) {
+export async function loader({ context, request }: Route.LoaderArgs) {
   try {
-    // 调用API从数据库获取书籍列表
-    const response = await fetch('/api/books');
+    // 在SSR期间，需要使用完整的URL
+    const baseUrl = new URL(request.url).origin;
+    const response = await fetch(new URL('/api/books', baseUrl));
     if (!response.ok) {
       throw new Error('Failed to fetch books');
     }
@@ -97,9 +98,9 @@ function BookFileCard({ book }: { book: Book }) {
   );
 }
 
-export default function Books({ loaderData }: Route.ComponentProps) {
-    const { books } = loaderData;
-    const { user, isAuthenticated, isAdmin } = useAuth();
+export default function Books() {
+  const { books } = useLoaderData() as { books: Book[] };
+  const { user, isAuthenticated, isAdmin } = useAuth();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">

@@ -26,8 +26,24 @@ export default [
     path: "/admin",
     file: "routes/admin/index.tsx"
   },
-  {
+  { 
     path: "/admin/upload",
     file: "routes/admin/upload.tsx"
+  },
+  { 
+    path: "/admin/books",
+    file: "routes/admin/books.tsx"
+  },
+  { 
+    path: "/admin/notes",
+    file: "routes/admin/notes.tsx"
+  },
+  { 
+    path: "/admin/users",
+    file: "routes/admin/users.tsx"
+  },
+  { 
+    path: "/admin/statistics",
+    file: "routes/admin/statistics.tsx"
   }
 ] satisfies RouteConfig;

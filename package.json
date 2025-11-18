@@ -49,8 +49,8 @@
     "dev": "react-router dev",
     "preview": "npm run build && vite preview",
     "typecheck": "npm run typegen && tsc -b",
-    "db:migrate": "wrangler d1 migrations apply philosophy-books-db --local false --yes",
-    "db:migrate:local": "wrangler d1 migrations apply philosophy-books-db --local --yes"
+    "db:migrate": "wrangler d1 migrations apply philosophy-books-db --local false",
+    "db:migrate:local": "wrangler d1 migrations apply philosophy-books-db --local"
   },
   "type": "module"
 }
