@@ -1,6 +1,7 @@
 import type { Route } from "./+types/notes";
 import { useAuth } from "../contexts/AuthContext";
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 
 // R2文件类型定义
 interface R2File {
@@ -295,32 +296,41 @@ export default function Notes({ loaderData }: Route.ComponentProps) {
             <div className="flex items-center space-x-4">
               {user ? (
                 <div className="flex items-center space-x-4">
+                  <Link 
+                    to="/profile" 
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    个人中心
+                  </Link>
                   {isAdmin && (
-                    <a 
-                      href="/admin/upload" 
+                    <Link 
+                      to="/admin/upload" 
                       className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
                     >
                       上传书籍
-                    </a>
+                    </Link>
                   )}
-                  <button className="bg-gray-200 hover:bg-gray-300 text-gray-900 px-4 py-2 rounded-md text-sm font-medium">
+                  <button 
+                    onClick={logout} 
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-900 px-4 py-2 rounded-md text-sm font-medium"
+                  >
                     退出登录
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center space-x-4">
-                  <a 
-                    href="/login" 
+                  <Link 
+                    to="/login" 
                     className="bg-gray-200 hover:bg-gray-300 text-gray-900 px-4 py-2 rounded-md text-sm font-medium"
                   >
                     登录
-                  </a>
-                  <a 
-                    href="/register" 
+                  </Link>
+                  <Link 
+                    to="/register" 
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
                   >
                     注册
-                  </a>
+                  </Link>
                 </div>
               )}
             </div>

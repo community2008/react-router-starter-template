@@ -76,6 +76,40 @@ apiRoutes.post('/login', async (c) => {
   return c.json(user);
 });
 
+// 修改密码
+apiRoutes.post('/update-password', async (c) => {
+  const userRepo = c.get('userRepo');
+  const { userId, currentPassword, newPassword } = await c.req.json();
+  
+  // 查找用户
+  const user = await userRepo.getUserById(userId);
+  if (!user) {
+    return c.text('用户不存在', 404);
+  }
+  
+  // 验证当前密码
+  const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
+  if (!isValidPassword) {
+    return c.text('当前密码错误', 401);
+  }
+  
+  // 哈希新密码
+  const salt = await bcrypt.genSalt(10);
+  const newPasswordHash = await bcrypt.hash(newPassword, salt);
+  
+  // 更新密码
+  const updatedUser = await userRepo.updateUser(userId, {
+    password_hash: newPasswordHash,
+    updated_at: new Date().toISOString()
+  });
+  
+  if (!updatedUser) {
+    return c.text('修改密码失败', 500);
+  }
+  
+  return c.json({ success: true, message: '密码修改成功' });
+});
+
 // 上传书籍（管理员专用）
 apiRoutes.post('/admin/upload-book', async (c) => {
   const bookRepo = c.get('bookRepo');

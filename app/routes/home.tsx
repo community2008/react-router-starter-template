@@ -1,4 +1,6 @@
+import { useAuth } from "../contexts/AuthContext";
 import type { Route } from "./+types/home";
+import { Link } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -7,18 +9,11 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export function loader({ context }: Route.LoaderArgs) {
-  return {
-    isAuthenticated: false, // 暂时硬编码为未登录
-    isAdmin: false // 暂时硬编码为非管理员
-  };
-}
-
 // 分类卡片组件
 function CategoryCard({ title, description, link, icon }: { title: string; description: string; link: string; icon: string }) {
   return (
-    <a 
-      href={link} 
+    <Link 
+      to={link} 
       className="bg-white bg-opacity-80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden transition-all hover:scale-105 hover:shadow-xl"
     >
       <div className="p-8 text-center">
@@ -29,12 +24,12 @@ function CategoryCard({ title, description, link, icon }: { title: string; descr
           进入专区
         </div>
       </div>
-    </a>
+    </Link>
   );
 }
 
-export default function Home({ loaderData }: Route.ComponentProps) {
-  const { isAuthenticated, isAdmin } = loaderData;
+export default function Home() {
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
   
   return (
     <div className="min-h-screen bg-cover bg-center bg-fixed" style={{ backgroundImage: `url('/image/1.jpg')` }}>
@@ -48,32 +43,41 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             <div className="flex items-center space-x-6">
               {isAuthenticated ? (
                 <div className="flex items-center space-x-4">
+                  <Link 
+                    to="/profile" 
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full text-sm font-medium transition-colors"
+                  >
+                    个人中心
+                  </Link>
                   {isAdmin && (
-                    <a 
-                      href="/admin/upload" 
+                    <Link 
+                      to="/admin/upload" 
                       className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full text-sm font-medium transition-colors"
                     >
                       上传书籍
-                    </a>
+                    </Link>
                   )}
-                  <button className="bg-gray-200 hover:bg-gray-300 text-gray-900 px-6 py-2 rounded-full text-sm font-medium transition-colors">
+                  <button 
+                    onClick={logout}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-900 px-6 py-2 rounded-full text-sm font-medium transition-colors"
+                  >
                     退出登录
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center space-x-4">
-                  <a 
-                    href="/login" 
+                  <Link 
+                    to="/login" 
                     className="bg-gray-200 hover:bg-gray-300 text-gray-900 px-6 py-2 rounded-full text-sm font-medium transition-colors"
                   >
                     登录
-                  </a>
-                  <a 
-                    href="/register" 
+                  </Link>
+                  <Link 
+                    to="/register" 
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full text-sm font-medium transition-colors"
                   >
                     注册
-                  </a>
+                  </Link>
                 </div>
               )}
             </div>

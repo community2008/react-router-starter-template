@@ -20,8 +20,17 @@ export default {
   fetch(request, env, ctx) {
     // 检查是否是API请求
     if (request.url.startsWith(`${new URL(request.url).origin}/api`)) {
+      // 创建一个新的请求，去掉/api前缀
+      const url = new URL(request.url);
+      const apiPath = url.pathname.replace(/^\/api/, '');
+      const modifiedUrl = new URL(apiPath, url.origin);
+      modifiedUrl.search = url.search;
+      modifiedUrl.hash = url.hash;
+      
+      const modifiedRequest = new Request(modifiedUrl, request);
+      
       // 处理API请求
-      return apiRoutes.fetch(request, env, ctx);
+      return apiRoutes.fetch(modifiedRequest, env, ctx);
     }
     
     // 处理React Router请求
