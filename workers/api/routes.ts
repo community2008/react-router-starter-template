@@ -23,8 +23,19 @@ declare module 'hono' {
 
 export const apiRoutes = new Hono<{ Bindings: Env }>();
 
-// 初始化服务
+// 初始化服务和CORS
 apiRoutes.use('*', async (c, next) => {
+  // 设置CORS headers
+  c.header('Access-Control-Allow-Origin', '*');
+  c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  c.header('Access-Control-Allow-Credentials', 'true');
+  
+  // 处理OPTIONS请求
+  if (c.req.method === 'OPTIONS') {
+    return c.text('OK', 200);
+  }
+  
   const { DB, BOOKS_BUCKET } = c.env;
   
   // 将服务添加到上下文
@@ -232,6 +243,7 @@ apiRoutes.get('/books/:id', async (c) => {
 // 删除书籍
 apiRoutes.delete('/books/:id', async (c) => {
   const bookRepo = c.get('bookRepo');
+  const noteRepo = c.get('noteRepo');
   const r2Service = c.get('r2Service');
   const id = parseInt(c.req.param('id'));
   
@@ -243,6 +255,18 @@ apiRoutes.delete('/books/:id', async (c) => {
   const book = await bookRepo.getBookById(id);
   if (!book) {
     return c.text('书籍不存在', 404);
+  }
+  
+  // 删除与该书籍关联的所有笔记
+  try {
+    const notes = await noteRepo.getNotesByBookId(id);
+    for (const note of notes) {
+      await noteRepo.deleteNote(note.id);
+      console.log('删除笔记成功:', note.id);
+    }
+  } catch (error) {
+    console.error('删除关联笔记失败:', error);
+    // 即使笔记删除失败，仍继续删除书籍和文件
   }
   
   // 从URL中提取文件路径
