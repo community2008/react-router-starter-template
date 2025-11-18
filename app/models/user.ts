@@ -2,7 +2,7 @@ export interface User {
   id: number;
   email: string;
   name: string;
-  password_hash: string;
+  password_hash?: string; // 可选，因为API返回时会过滤掉这个字段
   role: 'user' | 'admin';
   created_at: string;
   updated_at: string;

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Route } from "./+types/login";
 import { useAuth } from "../contexts/AuthContext";
-import { Form, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import type { User } from "../models/user";
 
 export function meta({}: Route.MetaArgs) {
@@ -61,7 +61,7 @@ export default function Login() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit} method="POST">
+          <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 邮箱地址

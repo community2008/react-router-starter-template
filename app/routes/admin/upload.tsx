@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { ProtectedRoute } from '../../components/ProtectedRoute';
-import type { Route } from './+types/upload';
 
-export function meta({}: Route.MetaArgs) {
+export function meta() {
   return [
     { title: "上传书籍 - 哲学书籍分享平台" },
     { name: "description", content: "管理员上传新书籍" },

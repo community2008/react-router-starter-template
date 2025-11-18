@@ -69,23 +69,36 @@ apiRoutes.post('/login', async (c) => {
     const userRepo = c.get('userRepo');
     const { email, password } = await c.req.json();
     
+    console.log('登录请求:', { email }); // 不要记录密码
+    
     // 查找用户
+    console.log('开始查找用户:', email);
     const user = await userRepo.getUserByEmail(email);
+    console.log('查找用户结果:', user ? '找到用户' : '未找到用户');
+    
     if (!user) {
+      console.log('登录失败: 用户不存在', email);
       return c.text('用户不存在', 404);
     }
     
     // 验证密码
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    console.log('开始验证密码');
+    // 类型断言：user.password_hash 在数据库中不可能为 undefined
+    const isValidPassword = await bcrypt.compare(password, user.password_hash as string);
+    console.log('密码验证结果:', isValidPassword);
+    
     if (!isValidPassword) {
+      console.log('登录失败: 密码错误', email);
       return c.text('密码错误', 401);
     }
     
     // 不返回密码哈希给客户端
     const { password_hash, ...userWithoutPassword } = user;
+    console.log('登录成功:', email);
     return c.json(userWithoutPassword);
   } catch (error) {
     console.error('登录错误:', error);
+    console.error('错误详情:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     return c.text('登录失败，请重试', 500);
   }
 });
@@ -102,10 +115,11 @@ apiRoutes.post('/update-password', async (c) => {
   }
   
   // 验证当前密码
-  const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
-  if (!isValidPassword) {
-    return c.text('当前密码错误', 401);
-  }
+    // 类型断言：user.password_hash 在数据库中不可能为 undefined
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash as string);
+    if (!isValidPassword) {
+      return c.text('当前密码错误', 401);
+    }
   
   // 哈希新密码
   const salt = await bcrypt.genSalt(10);

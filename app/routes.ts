@@ -11,12 +11,20 @@ export default [
     file: "routes/register.tsx"
   },
   {
+    path: "/profile",
+    file: "routes/profile.tsx"
+  },
+  {
     path: "/books",
     file: "routes/books.tsx"
   },
   {
     path: "/notes",
     file: "routes/notes.tsx"
+  },
+  {
+    path: "/admin",
+    file: "routes/admin/index.tsx"
   },
   {
     path: "/admin/upload",
