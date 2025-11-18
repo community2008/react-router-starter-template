@@ -15,8 +15,8 @@
     {
       "binding": "DB",
       "database_name": "philosophy-books-db",
-      "database_id": "",
-      "preview_database_id": ""
+      "database_id": "54ccb76d-d4c5-44ee-8cd0-f1384ef8be89",
+      "preview_database_id": "54ccb76d-d4c5-44ee-8cd0-f1384ef8be89"
     }
   ],
   "r2_buckets": [
