@@ -138,52 +138,7 @@ apiRoutes.post('/update-password', async (c) => {
   return c.json({ success: true, message: '密码修改成功' });
 });
 
-// 上传书籍（管理员专用）
-apiRoutes.post('/admin/upload-book', async (c) => {
-  const bookRepo = c.get('bookRepo');
-  const r2Service = c.get('r2Service');
-  
-  // 验证用户身份（这里应该使用JWT验证，暂时简化）
-  const { userId, role } = await c.req.json();
-  if (role !== 'admin') {
-    return c.text('无权限', 403);
-  }
-  
-  // 处理文件上传
-  const formData = await c.req.formData();
-  const title = formData.get('title') as string;
-  const author = formData.get('author') as string;
-  const description = formData.get('description') as string;
-  const bookFile = formData.get('bookFile') as File;
-  const coverFile = formData.get('coverFile') as File;
-  
-  // 上传书籍文件
-  const bookPath = `books/${Date.now()}-${bookFile.name}`;
-  await r2Service.uploadFile(bookFile, bookPath);
-  
-  // 上传封面图片（如果有）
-  let coverPath = '';
-  if (coverFile) {
-    coverPath = `covers/${Date.now()}-${coverFile.name}`;
-    await r2Service.uploadFile(coverFile, coverPath);
-  }
-  
-  // 获取文件URL
-  const bookUrl = await r2Service.getFileUrl(bookPath);
-  const coverUrl = coverPath ? await r2Service.getFileUrl(coverPath) : '';
-  
-  // 保存书籍信息到数据库
-  const book = await bookRepo.createBook({
-    title,
-    author,
-    description,
-    cover_url: coverUrl,
-    file_url: bookUrl,
-    uploaded_by: userId
-  });
-  
-  return c.json(book);
-});
+
 
 // 获取书籍列表
 apiRoutes.get('/books', async (c) => {
@@ -283,19 +238,7 @@ apiRoutes.get('/files/:path{.*}', async (c) => {
 
 // 用户上传笔记文件
 apiRoutes.post('/notes/upload', async (c) => {
-  const r2Service = c.get('r2Service');
-  const userRepo = c.get('userRepo');
-  
   try {
-    // 验证用户身份
-    const authHeader = c.req.header('Authorization');
-    if (!authHeader) {
-      return c.text('未授权', 401);
-    }
-    
-    const token = authHeader.replace('Bearer ', '');
-    // 这里应该验证JWT token，暂时简化为检查用户是否存在
-    
     // 处理文件上传
     const formData = await c.req.formData();
     const noteFile = formData.get('noteFile') as File;
@@ -303,22 +246,48 @@ apiRoutes.post('/notes/upload', async (c) => {
     const author = formData.get('author') as string;
     
     if (!noteFile || !title || !author) {
+      console.log('上传失败：缺少文件或元数据');
       return c.text('请提供完整信息', 400);
     }
     
+    console.log('开始上传文件:', noteFile.name, '大小:', noteFile.size, '类型:', noteFile.type);
+    console.log('标题:', title, '作者:', author);
+    
     // 上传笔记文件到R2存储桶
     const notePath = `notes/${Date.now()}-${noteFile.name}`;
-    await r2Service.uploadFile(noteFile, notePath);
+    
+    // 使用上下文（context）中的r2Service
+    const r2Service = c.get('r2Service');
+    
+    if (!r2Service) {
+      console.error('R2服务未初始化');
+      return c.text('服务未初始化', 500);
+    }
+    
+    console.log('使用R2服务上传文件，路径:', notePath);
+    
+    // 尝试上传文件
+    const uploadedPath = await r2Service.uploadFile(noteFile, notePath, { title, author });
+    
+    console.log('文件上传成功到R2:', uploadedPath);
     
     // 返回成功信息
     return c.json({
       success: true,
       message: '笔记上传成功',
-      path: notePath
+      path: uploadedPath,
+      fileInfo: {
+        name: noteFile.name,
+        size: noteFile.size,
+        type: noteFile.type,
+        path: uploadedPath
+      }
     });
   } catch (error) {
-    console.error('Error uploading note:', error);
-    return c.text('上传笔记失败', 500);
+    console.error('上传错误:', error);
+    console.error('错误类型:', typeof error);
+    console.error('错误堆栈:', error instanceof Error ? error.stack : 'N/A');
+    return c.text(`上传笔记失败: ${error instanceof Error ? error.message : '未知错误'}`, 500);
   }
 });
 
@@ -328,12 +297,6 @@ apiRoutes.post('/admin/upload-book', async (c) => {
   const r2Service = c.get('r2Service');
   
   try {
-    // 验证用户身份（这里应该使用JWT验证，暂时简化）
-    const authHeader = c.req.header('Authorization');
-    if (!authHeader) {
-      return c.text('未授权', 401);
-    }
-    
     // 处理文件上传
     const formData = await c.req.formData();
     const title = formData.get('title') as string;
@@ -343,15 +306,28 @@ apiRoutes.post('/admin/upload-book', async (c) => {
     const coverFile = formData.get('coverFile') as File;
     const userId = formData.get('userId') as string;
     
+    if (!bookFile || !title || !author || !description || !userId) {
+      console.log('上传书籍失败：缺少必填字段');
+      return c.text('请提供完整信息', 400);
+    }
+    
+    console.log('开始上传书籍:', bookFile.name, '大小:', bookFile.size, '类型:', bookFile.type);
+    console.log('标题:', title, '作者:', author, '描述:', description, '用户ID:', userId);
+    if (coverFile) {
+      console.log('封面文件:', coverFile.name, '大小:', coverFile.size, '类型:', coverFile.type);
+    }
+    
     // 上传书籍文件
     const bookPath = `books/${Date.now()}-${bookFile.name}`;
     await r2Service.uploadFile(bookFile, bookPath);
+    console.log('书籍文件上传成功到R2:', bookPath);
     
     // 上传封面图片（如果有）
     let coverPath = '';
     if (coverFile) {
       coverPath = `covers/${Date.now()}-${coverFile.name}`;
       await r2Service.uploadFile(coverFile, coverPath);
+      console.log('封面图片上传成功到R2:', coverPath);
     }
     
     // 获取文件URL
@@ -368,9 +344,10 @@ apiRoutes.post('/admin/upload-book', async (c) => {
       uploaded_by: parseInt(userId)
     });
     
+    console.log('书籍信息保存成功到数据库:', book.id);
     return c.json(book);
   } catch (error) {
-    console.error('Error uploading book:', error);
-    return c.text('上传书籍失败', 500);
+    console.error('上传书籍错误:', error);
+    return c.text(`上传书籍失败: ${error instanceof Error ? error.message : '未知错误'}`, 500);
   }
 });
