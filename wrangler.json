@@ -10,5 +10,20 @@
   "upload_source_maps": true,
   "vars": {
     "VALUE_FROM_CLOUDFLARE": "Hello from Cloudflare"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "philosophy-books-db",
+      "database_id": "",
+      "preview_database_id": ""
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BOOKS_BUCKET",
+      "bucket_name": "philosophy-books",
+      "preview_bucket_name": "philosophy-books-preview"
+    }
+  ]
 }
