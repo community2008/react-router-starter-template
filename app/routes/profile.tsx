@@ -1,9 +1,8 @@
 import { useState } from "react";
-import type { Route } from "./+types/profile";
 import { useAuth } from "../contexts/AuthContext";
 import { Link } from "react-router";
 
-export function meta({}: Route.MetaArgs) {
+export function meta() {
   return [
     { title: "个人中心 - 哲学书籍分享平台" },
     { name: "description", content: "管理您的账户和发布的内容" },

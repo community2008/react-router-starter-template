@@ -282,7 +282,7 @@ function UploadNoteForm() {
 
 export default function Notes({ loaderData }: Route.ComponentProps) {
   const { notes } = loaderData;
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
