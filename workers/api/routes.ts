@@ -37,43 +37,57 @@ apiRoutes.use('*', async (c, next) => {
 
 // 用户注册
 apiRoutes.post('/register', async (c) => {
-  const userRepo = c.get('userRepo');
-  const { email, name, password, role = 'user' } = await c.req.json();
-  
-  // 检查用户是否已存在
-  const existingUser = await userRepo.getUserByEmail(email);
-  if (existingUser) {
-    return c.text('用户已存在', 400);
+  try {
+    const userRepo = c.get('userRepo');
+    const { email, name, password, role = 'user' } = await c.req.json();
+    
+    // 检查用户是否已存在
+    const existingUser = await userRepo.getUserByEmail(email);
+    if (existingUser) {
+      return c.text('用户已存在', 400);
+    }
+    
+    // 哈希密码
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
+    
+    // 创建用户
+    const user = await userRepo.createUser({ email, name, password_hash, role });
+    
+    // 不返回密码哈希给客户端
+    const { password_hash: _, ...userWithoutPassword } = user;
+    return c.json(userWithoutPassword);
+  } catch (error) {
+    console.error('注册错误:', error);
+    return c.text('注册失败，请重试', 500);
   }
-  
-  // 哈希密码
-  const salt = await bcrypt.genSalt(10);
-  const password_hash = await bcrypt.hash(password, salt);
-  
-  // 创建用户
-  const user = await userRepo.createUser({ email, name, password_hash, role });
-  
-  return c.json(user);
 });
 
 // 用户登录
 apiRoutes.post('/login', async (c) => {
-  const userRepo = c.get('userRepo');
-  const { email, password } = await c.req.json();
-  
-  // 查找用户
-  const user = await userRepo.getUserByEmail(email);
-  if (!user) {
-    return c.text('用户不存在', 404);
+  try {
+    const userRepo = c.get('userRepo');
+    const { email, password } = await c.req.json();
+    
+    // 查找用户
+    const user = await userRepo.getUserByEmail(email);
+    if (!user) {
+      return c.text('用户不存在', 404);
+    }
+    
+    // 验证密码
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    if (!isValidPassword) {
+      return c.text('密码错误', 401);
+    }
+    
+    // 不返回密码哈希给客户端
+    const { password_hash, ...userWithoutPassword } = user;
+    return c.json(userWithoutPassword);
+  } catch (error) {
+    console.error('登录错误:', error);
+    return c.text('登录失败，请重试', 500);
   }
-  
-  // 验证密码
-  const isValidPassword = await bcrypt.compare(password, user.password_hash);
-  if (!isValidPassword) {
-    return c.text('密码错误', 401);
-  }
-  
-  return c.json(user);
 });
 
 // 修改密码
